@@ -72,7 +72,7 @@ func SignupUser(w http.ResponseWriter, r *http.Request) {
 		return
 
 	} else {
-		json.NewEncoder(w).Encode(map[string]string{"token": "test"})
+		json.NewEncoder(w).Encode(map[string]string{"token": CreateToken(user.Email)})
 		fmt.Println("Successfully signed up user")
 		return
 	}
