@@ -150,7 +150,46 @@ func BuyShare(w http.ResponseWriter, r *http.Request) {
 }
 
 func SellShare(w http.ResponseWriter, r *http.Request) {
+	//Checks if bearer token exists
+	claims := AuthChecker(r.Header["Authorization"], w)
+	if claims == nil {
+		return
+	}
 
+	//grabs share list from email
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("shares", "balance").Select()
+	if err != nil {
+		panic(err)
+	}
+
+	//parse removed shares from body
+	var body map[string]map[string]map[string]int
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &body)
+
+	//remove owned shares and adds balance
+	for name, data := range body["sharesToRemove"] {
+		user.Balance += int64(data["priceCents"] * data["quantity"])
+
+		if _, ok := user.Shares[name]; ok {
+			user.Shares[name] -= data["quantity"]
+			if user.Shares[name] == 0 {
+				delete(user.Shares, name)
+			}
+		} else {
+			fmt.Println("user does not own listed shares")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("user does not own listed shares"))
+			return
+		}
+	}
+
+	_, err = db.Model(&user).Column("shares", "balance").WherePK().Update()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Subscribe(w http.ResponseWriter, r *http.Request) {
