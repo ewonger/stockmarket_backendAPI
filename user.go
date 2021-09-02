@@ -95,5 +95,16 @@ func Subscribe(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPortfolio(w http.ResponseWriter, r *http.Request) {
+	//Checks if bearer token exists
+	claims := AuthChecker(r.Header["Authorization"], w)
+	fmt.Println(claims)
 
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("email", "first_name", "last_name", "balance", "subscriptions", "shares").Select()
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(w).Encode(map[string]User{"user": user})
 }
