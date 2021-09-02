@@ -79,7 +79,32 @@ func SignupUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddBalance(w http.ResponseWriter, r *http.Request) {
+	//Checks if bearer token exists
+	claims := AuthChecker(r.Header["Authorization"], w)
 
+	reqBody, _ := ioutil.ReadAll(r.Body)
+
+	//grab balance from email
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("balance").Select()
+	if err != nil {
+		panic(err)
+	}
+
+	//parse amount to be added from body
+	var body map[string]interface{}
+	json.Unmarshal(reqBody, &body)
+	fmt.Println(int64(body["add_bal"].(float64)))
+
+	//update balance
+	user.Balance += int64(body["add_bal"].(float64))
+	_, err = db.Model(&user).Column("balance").WherePK().Update()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully updated user")
 }
 
 func BuyShare(w http.ResponseWriter, r *http.Request) {
