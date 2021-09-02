@@ -18,28 +18,25 @@ type User struct {
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
-	//Stores username and password from request body and checks if it is equal with database
+	//stores username and password from body
 	reqBody, _ := ioutil.ReadAll(r.Body)
+	var body map[string]string
+	json.Unmarshal(reqBody, &body)
+
 	var user *User = &User{}
 	json.Unmarshal(reqBody, user)
 
-	var userDB *User = &User{}
-	json.Unmarshal(reqBody, userDB)
-
-	err := db.Model(userDB).WherePK().Column("email", "password").Select()
+	err := db.Model(user).WherePK().Column("email", "password").Select()
 	if err != nil {
 		panic(err)
 	}
 
-	if user.Email == userDB.Email && user.Password == userDB.Password {
+	if body["email"] == user.Email && body["password"] == user.Password {
 		json.NewEncoder(w).Encode(map[string]string{"token": CreateToken(user.Email)})
 		fmt.Println("Successfully logged in")
-		return
-
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Incorrect email/password"))
-		return
 	}
 }
 
@@ -60,18 +57,17 @@ func SignupUser(w http.ResponseWriter, r *http.Request) {
 	user.Balance = 0
 	user.Shares = make(map[string]int)
 	user.Subscriptions = make([]string, 0)
+
 	_, err := db.Model(user).Insert()
 	if err != nil {
 		//Email exists
 		fmt.Println("Error signing up user. Email already exists")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Email already exists"))
-		return
 
 	} else {
 		json.NewEncoder(w).Encode(map[string]string{"token": CreateToken(user.Email)})
 		fmt.Println("Successfully signed up user")
-		return
 	}
 }
 
