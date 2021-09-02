@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -21,27 +20,29 @@ type Share struct {
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func SignupUser(w http.ResponseWriter, r *http.Request) {
-}
-
-func AddBalance() {
 
 }
 
-func BuyShare() {
+func AddBalance(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func SellShare() {
+func BuyShare(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Subscribe() {
+func SellShare(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getPortfolio() {
+func Subscribe(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func getPortfolio(w http.ResponseWriter, r *http.Request) {
 
 }
