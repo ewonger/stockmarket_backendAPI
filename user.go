@@ -59,6 +59,7 @@ func SignupUser(w http.ResponseWriter, r *http.Request) {
 
 	user.Balance = 0
 	user.Shares = make(map[string]int)
+	user.Subscriptions = make([]string, 0)
 	_, err := db.Model(user).Insert()
 	if err != nil {
 		//Email exists
