@@ -1,17 +1,20 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
 type User struct {
-	Email        string   `json:"email" pg:",pk"`
-	Password     string   `json:"password,omitempty"`
-	FirstName    string   `json:"firstName"`
-	LastName     string   `json:"lastName"`
-	Balance      int64    `json:"balance"`
-	Subscription []string `json:"subscription"`
-	Shares       []Share  `json:"shares"`
+	Email         string   `json:"email" pg:",pk"`
+	Password      string   `json:"password,omitempty"`
+	FirstName     string   `json:"firstName"`
+	LastName      string   `json:"lastName"`
+	Balance       int64    `json:"balance"`
+	Subscriptions []string `json:"subscriptions"`
+	Shares        []Share  `json:"shares"`
 }
 
 type Share struct {
@@ -24,7 +27,25 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func SignupUser(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
 
+	var user *User = &User{}
+	json.Unmarshal(reqBody, user)
+
+	user.Balance = 0
+	_, err := db.Model(user).Insert()
+	if err != nil {
+		//Email exists
+		fmt.Println("Error signing up user. Email already exists")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Email already exists"))
+		return
+
+	} else {
+		json.NewEncoder(w).Encode(map[string]string{"token": "test"})
+		fmt.Println("Successfully signed up user")
+		return
+	}
 }
 
 func AddBalance(w http.ResponseWriter, r *http.Request) {
