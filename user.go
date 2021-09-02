@@ -26,6 +26,14 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	c := http.Cookie{
+		Name:   "token",
+		MaxAge: -1}
+	http.SetCookie(w, &c)
+	w.Write([]byte("Logged out"))
+}
+
 func SignupUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 

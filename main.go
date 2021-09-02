@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"github.com/go-pg/pg/v10"
-	"github.com/go-pg/pg/v10/orm"
+	// "github.com/go-pg/pg/v10/orm"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -15,6 +15,7 @@ func HandleRequests() {
 	router := mux.NewRouter()
 	router.HandleFunc("/signup", SignupUser).Methods("POST")
 	router.HandleFunc("/login", LoginUser).Methods("POST")
+	router.HandleFunc("/logout", LogoutUser).Methods("POST")
 	router.HandleFunc("/user", BuyShare).Methods("POST")
 	router.HandleFunc("/user", SellShare).Methods("POST")
 	router.HandleFunc("/user", Subscribe).Methods("POST")
@@ -36,12 +37,12 @@ func main() {
 	})
 	defer db.Close()
 
-	//creates table users
-	err := db.Model((*User)(nil)).CreateTable(&orm.CreateTableOptions{})
-	if err != nil {
+	// //creates table users
+	// err := db.Model((*User)(nil)).CreateTable(&orm.CreateTableOptions{})
+	// if err != nil {
 
-		fmt.Println("Table exists")
-	}
+	// 	fmt.Println("Table exists", err)
+	// }
 
 	HandleRequests()
 }
