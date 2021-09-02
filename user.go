@@ -89,12 +89,18 @@ func AddBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//parse amount to be added from body
-	var body map[string]interface{}
+	var body map[string]int
 	json.Unmarshal(reqBody, &body)
-	fmt.Println(int64(body["add_bal"].(float64)))
+	fmt.Println(body)
+	if body["addBal"] == 0 {
+		fmt.Println("no balance to add")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("No balance to add"))
+		return
+	}
 
 	//update balance
-	user.Balance += int64(body["add_bal"].(float64))
+	user.Balance += int64(body["addBal"])
 	_, err = db.Model(&user).Column("balance").WherePK().Update()
 	if err != nil {
 		panic(err)
