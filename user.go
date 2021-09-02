@@ -23,7 +23,29 @@ type Share struct {
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
+	//Stores username and password from request body and checks if it is equal with database
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	var user *User = &User{}
+	json.Unmarshal(reqBody, user)
 
+	var userDB *User = &User{}
+	json.Unmarshal(reqBody, userDB)
+
+	err := db.Model(userDB).WherePK().Column("email", "password").Select()
+	if err != nil {
+		panic(err)
+	}
+
+	if user.Email == userDB.Email && user.Password == userDB.Password {
+		json.NewEncoder(w).Encode(map[string]string{"token": CreateToken(user.Email)})
+		fmt.Println("Successfully logged in")
+		return
+
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Incorrect email/password"))
+		return
+	}
 }
 
 func LogoutUser(w http.ResponseWriter, r *http.Request) {
