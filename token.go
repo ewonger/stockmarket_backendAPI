@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/golang-jwt/jwt"
+	"net/http"
 	"time"
 )
 
@@ -48,4 +49,22 @@ func ParseToken(tokenString string) (jwt.MapClaims, error) {
 	}
 
 	return claims, err
+}
+
+func AuthChecker(header []string, w http.ResponseWriter) jwt.MapClaims {
+	token := header
+	if len(token) == 0 {
+		fmt.Println("missing token")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Missing token"))
+		return nil
+	}
+
+	claims, err := ParseToken(token[0][7:])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Token"))
+		return nil
+	}
+	return claims
 }
