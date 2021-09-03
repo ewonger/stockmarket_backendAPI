@@ -199,18 +199,25 @@ func Subscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//grabs share list from email
+	//parse subscriptions from body
 	var user User
+	var body map[string]string
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &body)
+	fmt.Println(body)
+	if len(body) == 0 || body["name"] == "" {
+		fmt.Println("missing parameters")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(string(user.Email) + "missing parameters"))
+		return
+	}
+
+	//grabs share list from email
 	user.Email = fmt.Sprintf("%v", claims["email"])
 	err := db.Model(&user).WherePK().Column("subscriptions").Select()
 	if err != nil {
 		panic(err)
 	}
-	//parse subscriptions from body
-	var body map[string]string
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	json.Unmarshal(reqBody, &body)
-	fmt.Println(body)
 
 	if _, ok := user.Subscriptions[body["name"]]; ok {
 		fmt.Println("already subscribed")
@@ -234,18 +241,24 @@ func Unsubscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//grabs share list from email
+	//parse subscriptions from body
 	var user User
+	var body map[string]string
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &body)
+	if len(body) == 0 || body["name"] == "" {
+		fmt.Println("missing parameters")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(string(user.Email) + "missing parameters"))
+		return
+	}
+
+	//grabs share list from email
 	user.Email = fmt.Sprintf("%v", claims["email"])
 	err := db.Model(&user).WherePK().Column("subscriptions").Select()
 	if err != nil {
 		panic(err)
 	}
-	//parse subscriptions from body
-	var body map[string]string
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	json.Unmarshal(reqBody, &body)
-	fmt.Println(body)
 
 	if _, ok := user.Subscriptions[body["name"]]; ok {
 		delete(user.Subscriptions, body["name"])
@@ -266,7 +279,9 @@ func Unsubscribe(w http.ResponseWriter, r *http.Request) {
 func getPortfolio(w http.ResponseWriter, r *http.Request) {
 	//Checks if bearer token exists
 	claims := AuthChecker(r.Header["Authorization"], w)
-	fmt.Println(claims)
+	if claims == nil {
+		return
+	}
 
 	var user User
 	user.Email = fmt.Sprintf("%v", claims["email"])
