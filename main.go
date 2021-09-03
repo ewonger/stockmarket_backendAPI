@@ -16,11 +16,12 @@ func HandleRequests() {
 	router.HandleFunc("/signup", SignupUser).Methods("POST")
 	router.HandleFunc("/login", LoginUser).Methods("POST")
 	router.HandleFunc("/logout", LogoutUser).Methods("POST")
-	router.HandleFunc("/user", BuyShare).Methods("POST")
-	router.HandleFunc("/user", SellShare).Methods("POST")
-	router.HandleFunc("/user", Subscribe).Methods("POST")
+	router.HandleFunc("/user/buyshare", BuyShare).Methods("POST")
+	router.HandleFunc("/user/sellshare", SellShare).Methods("POST")
+	router.HandleFunc("/user/subscribe", Subscribe).Methods("POST")
+	router.HandleFunc("/user/unsubscribe", Unsubscribe).Methods("POST")
 
-	router.HandleFunc("/user", AddBalance).Methods("PUT")
+	router.HandleFunc("/user/addbalance", AddBalance).Methods("PUT")
 
 	router.HandleFunc("/user", getPortfolio).Methods("GET")
 
@@ -37,10 +38,9 @@ func main() {
 	})
 	defer db.Close()
 
-	// //creates table users
+	//creates table users, ran once to initialize table
 	// err := db.Model((*User)(nil)).CreateTable(&orm.CreateTableOptions{})
 	// if err != nil {
-
 	// 	fmt.Println("Table exists", err)
 	// }
 
