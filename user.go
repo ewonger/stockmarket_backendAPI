@@ -77,14 +77,6 @@ func AddBalance(w http.ResponseWriter, r *http.Request) {
 
 	reqBody, _ := ioutil.ReadAll(r.Body)
 
-	//grab balance from email
-	var user User
-	user.Email = fmt.Sprintf("%v", claims["email"])
-	err := db.Model(&user).WherePK().Column("balance").Select()
-	if err != nil {
-		panic(err)
-	}
-
 	//parse amount to be added from body
 	var body map[string]int
 	json.Unmarshal(reqBody, &body)
@@ -94,6 +86,14 @@ func AddBalance(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("No balance to add"))
 		return
+	}
+
+	//grab balance from email
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("balance").Select()
+	if err != nil {
+		panic(err)
 	}
 
 	//update balance
@@ -122,25 +122,35 @@ func BuyShare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//parse added shares from body
-	var body map[string]map[string]map[string]int
+	var body map[string]interface{}
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &body)
 
-	for name, data := range body["sharesToAdd"] {
-		//returns error if not enough balance
-		user.Balance -= int64(data["priceCents"] * data["quantity"])
-		if user.Balance < 0 {
-			fmt.Println("not enough balance")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Not enough balance to buy"))
-			return
-		}
+	//check for missing parameters
+	if len(body) == 0 || body["name"] == nil || body["quantity"] == nil || body["priceCents"] == nil {
+		fmt.Println("missing parameters")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(string(user.Email) + " missing parameters"))
+		return
+	}
 
-		if _, ok := user.Shares[name]; ok {
-			user.Shares[name] += data["quantity"]
-		} else {
-			user.Shares[name] = data["quantity"]
-		}
+	var name = body["name"].(string)
+	var quantity = int64(body["quantity"].(float64))
+	var priceCents = int64(body["priceCents"].(float64))
+
+	//returns error if not enough balance
+	user.Balance -= priceCents * quantity
+	if user.Balance < 0 {
+		fmt.Println("not enough balance")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Not enough balance to buy"))
+		return
+	}
+
+	if _, ok := user.Shares[name]; ok {
+		user.Shares[name] += int(quantity)
+	} else {
+		user.Shares[name] = int(quantity)
 	}
 
 	_, err = db.Model(&user).Column("shares", "balance").WherePK().Update()
@@ -164,26 +174,36 @@ func SellShare(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	//parse removed shares from body
-	var body map[string]map[string]map[string]int
+	//parse added shares from body
+	var body map[string]interface{}
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &body)
 
-	//remove owned shares and adds balance
-	for name, data := range body["sharesToRemove"] {
-		user.Balance += int64(data["priceCents"] * data["quantity"])
+	//check for missing parameters
+	if len(body) == 0 || body["name"] == nil || body["quantity"] == nil || body["priceCents"] == nil {
+		fmt.Println("missing parameters")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(string(user.Email) + " missing parameters"))
+		return
+	}
 
-		if _, ok := user.Shares[name]; ok {
-			user.Shares[name] -= data["quantity"]
-			if user.Shares[name] == 0 {
-				delete(user.Shares, name)
-			}
-		} else {
-			fmt.Println("user does not own listed shares")
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("user does not own listed shares"))
-			return
+	var name = body["name"].(string)
+	var quantity = int64(body["quantity"].(float64))
+	var priceCents = int64(body["priceCents"].(float64))
+
+	//remove owned shares and adds balance
+	user.Balance += priceCents * quantity
+
+	if _, ok := user.Shares[name]; ok {
+		user.Shares[name] -= int(quantity)
+		if user.Shares[name] == 0 {
+			delete(user.Shares, name)
 		}
+	} else {
+		fmt.Println("user does not own listed shares")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("user does not own listed shares"))
+		return
 	}
 
 	_, err = db.Model(&user).Column("shares", "balance").WherePK().Update()
@@ -208,7 +228,7 @@ func Subscribe(w http.ResponseWriter, r *http.Request) {
 	if len(body) == 0 || body["name"] == "" {
 		fmt.Println("missing parameters")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(string(user.Email) + "missing parameters"))
+		w.Write([]byte(string(user.Email) + " missing parameters"))
 		return
 	}
 
@@ -249,7 +269,7 @@ func Unsubscribe(w http.ResponseWriter, r *http.Request) {
 	if len(body) == 0 || body["name"] == "" {
 		fmt.Println("missing parameters")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(string(user.Email) + "missing parameters"))
+		w.Write([]byte(string(user.Email) + " missing parameters"))
 		return
 	}
 
