@@ -8,13 +8,13 @@ import (
 )
 
 type User struct {
-	Email         string         `json:"email" pg:",pk"`
-	Password      string         `json:"password,omitempty"`
-	FirstName     string         `json:"firstName"`
-	LastName      string         `json:"lastName"`
-	Balance       int64          `json:"balance"`
-	Subscriptions []string       `json:"subscriptions"`
-	Shares        map[string]int `json:"shares"`
+	Email         string            `json:"email" pg:",pk"`
+	Password      string            `json:"password,omitempty"`
+	FirstName     string            `json:"firstName"`
+	LastName      string            `json:"lastName"`
+	Balance       int64             `json:"balance"`
+	Subscriptions map[string]string `json:"subscriptions"`
+	Shares        map[string]int    `json:"shares"`
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +56,7 @@ func SignupUser(w http.ResponseWriter, r *http.Request) {
 
 	user.Balance = 0
 	user.Shares = make(map[string]int)
-	user.Subscriptions = make([]string, 0)
+	user.Subscriptions = make(map[string]string)
 
 	_, err := db.Model(user).Insert()
 	if err != nil {
@@ -193,7 +193,74 @@ func SellShare(w http.ResponseWriter, r *http.Request) {
 }
 
 func Subscribe(w http.ResponseWriter, r *http.Request) {
+	//Checks if bearer token exists
+	claims := AuthChecker(r.Header["Authorization"], w)
+	if claims == nil {
+		return
+	}
 
+	//grabs share list from email
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("subscriptions").Select()
+	if err != nil {
+		panic(err)
+	}
+	//parse subscriptions from body
+	var body map[string]string
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &body)
+	fmt.Println(body)
+
+	if _, ok := user.Subscriptions[body["name"]]; ok {
+		fmt.Println("already subscribed")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("user is already subscribed"))
+		return
+	} else {
+		user.Subscriptions[body["name"]] = body["url"]
+	}
+
+	_, err = db.Model(&user).Column("subscriptions").WherePK().Update()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Unsubscribe(w http.ResponseWriter, r *http.Request) {
+	//Checks if bearer token exists
+	claims := AuthChecker(r.Header["Authorization"], w)
+	if claims == nil {
+		return
+	}
+
+	//grabs share list from email
+	var user User
+	user.Email = fmt.Sprintf("%v", claims["email"])
+	err := db.Model(&user).WherePK().Column("subscriptions").Select()
+	if err != nil {
+		panic(err)
+	}
+	//parse subscriptions from body
+	var body map[string]string
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &body)
+	fmt.Println(body)
+
+	if _, ok := user.Subscriptions[body["name"]]; ok {
+		delete(user.Subscriptions, body["name"])
+
+	} else {
+		fmt.Println("user is already unsubscribed")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("user is already unsubscribed"))
+		return
+	}
+
+	_, err = db.Model(&user).Column("subscriptions").WherePK().Update()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func getPortfolio(w http.ResponseWriter, r *http.Request) {
